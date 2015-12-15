@@ -1,0 +1,19 @@
+{
+  "author": "Russel Simmons",
+  "description": "Transform a short audio sample into a longer smoothly looping sample",
+  "license": "MIT",
+  "main": "main.js",
+  "name": "spectraloop",
+  "scripts": {
+    "build": "browserify main.js > bundle.js",
+    "watch": "watchify main.js -o bundle.js -v"
+  },
+  "version": "0.0.0",
+  "devDependencies": {
+    "browserify": "^12.0.1",
+    "watchify": "^3.6.1"
+  },
+  "dependencies": {
+    "jsfft": "git://github.com/dntj/jsfft.git"
+  }
+}
