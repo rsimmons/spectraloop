@@ -22,6 +22,29 @@ document.addEventListener('DOMContentLoaded', function() {
   var AudioContext = window.AudioContext || window.webkitAudioContext;
   var audioCtx = new AudioContext();
 
+  var offsetInputElem = document.getElementById('offset-input');
+  var currentOffsetFrames = 0;
+  var currentInputBuffer;
+  var currentOutputBufferSource;
+
+  function recomputeLoop() {
+    console.log('Computing spectraloop ...');
+    var slBuffer = spectraloop.spectraloop(audioCtx, currentInputBuffer, currentOffsetFrames, 8192, 2*44100);
+    console.log(slBuffer);
+
+    if (currentOutputBufferSource) {
+      currentOutputBufferSource.disconnect();
+    }
+
+    console.log('Playing ...');
+    var newBufferSource = audioCtx.createBufferSource();
+    newBufferSource.buffer = slBuffer;
+    newBufferSource.loop = true;
+    newBufferSource.connect(audioCtx.destination);
+    newBufferSource.start(0);
+    currentOutputBufferSource = newBufferSource;
+  }
+
   var dropTarget = document;
   dropTarget.addEventListener('dragover', function(e){ e.preventDefault(); }, true);
   dropTarget.addEventListener('drop', function(e) {
@@ -29,18 +52,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('Loading input file ...');
     loadAudioFile(audioCtx, e.dataTransfer.files[0], function(audioBuffer) {
-      console.log(audioBuffer);
+      currentInputBuffer = audioBuffer;
+      console.log(currentInputBuffer);
 
-      console.log('Computing spectraloop ...');
-      var slBuffer = spectraloop.spectraloop(audioCtx, audioBuffer, 135*44100, 512, 4*44100);
-      console.log(slBuffer);
+      offsetInputElem.max = audioBuffer.length;
+      offsetInputElem.value = 0;
+      offsetInputElem.addEventListener('change', function() {
+        currentOffsetFrames = (+this.value);
+        recomputeLoop();
+      }, false);
 
-      console.log('Playing ...');
-      var bufSrc = audioCtx.createBufferSource();
-      bufSrc.buffer = slBuffer;
-      bufSrc.loop = true;
-      bufSrc.connect(audioCtx.destination);
-      bufSrc.start(0);
+      recomputeLoop();
     });
   }, true);
 });
