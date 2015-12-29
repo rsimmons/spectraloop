@@ -1,5 +1,6 @@
 'use strict';
 
+var resample = require('./resample');
 var spectraloop = require('./spectraloop');
 
 function loadAudioFile(audioCtx, file, cb) {
@@ -18,10 +19,36 @@ function loadAudioFile(audioCtx, file, cb) {
   reader.readAsArrayBuffer(file);
 }
 
+function renderWaveform(canvasElem, audioBuffer) {
+  var width = canvasElem.parentNode.clientWidth
+  canvasElem.width = width;
+  var height = canvasElem.height;
+
+  var sumSqrSamples = new Float32Array(audioBuffer.length); // sum of squares of sample values across all channels
+  for (var i = 0; i < audioBuffer.numberOfChannels; i++) {
+    var samples = audioBuffer.getChannelData(i);
+    for (var j = 0; j < audioBuffer.length; j++) {
+      sumSqrSamples[j] += samples[j]*samples[j];
+    }
+  }
+  var foo = new Float32Array(width);
+  resample.resampleArray(sumSqrSamples, foo);
+
+  var ctx = canvasElem.getContext('2d');
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvasElem.width, canvasElem.height);
+  ctx.fillStyle = 'white';
+  for (var i = 0; i < width; i++) {
+    var h = Math.abs(Math.sqrt(foo[i])*height);
+    ctx.fillRect(i, 0.5*(height-h), 1, h);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   var AudioContext = window.AudioContext || window.webkitAudioContext;
   var audioCtx = new AudioContext();
 
+  var inputWaveformElem = document.getElementById('input-waveform');
   var offsetInputElem = document.getElementById('offset-input');
   var currentOffsetFrames = 0;
   var currentInputBuffer;
@@ -54,6 +81,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAudioFile(audioCtx, e.dataTransfer.files[0], function(audioBuffer) {
       currentInputBuffer = audioBuffer;
       console.log(currentInputBuffer);
+
+      renderWaveform(inputWaveformElem, audioBuffer);
 
       offsetInputElem.max = audioBuffer.length;
       offsetInputElem.value = 0;

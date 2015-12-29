@@ -1,5 +1,6 @@
 'use strict';
 
+var resample = require('./resample');
 require('jsfft/lib/fft'); // This seems dumb, but need to do this for ComplexArray to get FFT method
 var ComplexArray = require('jsfft/lib/complex_array').ComplexArray;
 
@@ -17,24 +18,6 @@ function blackmanHarris(length) {
   }
 
   return result;
-}
-
-function resampleArray(inArray, outArray) {
-  if (inArray.length > outArray.length) {
-    throw new Error('Can only lengthen for now');
-  }
-
-  var dIn = (inArray.length-1)/(outArray.length-1);
-  var inPos = 0;
-  for (var i = 0; i < outArray.length; i++) {
-    var in0 = Math.min(Math.floor(inPos), inArray.length-2); // The min() clamps to make sure end matches up perfectly
-    var in1 = in0 + 1;
-    var frac = inPos - in0;
-
-    outArray[i] = (1.0 - frac)*inArray[in0] + frac*inArray[in1];
-
-    inPos += dIn;
-  }
 }
 
 function spectraloopArray(inArray, outArray) {
@@ -77,7 +60,7 @@ function spectraloopArray(inArray, outArray) {
   // Resample amplitude/magnitude data, i.e. "stretch" them
   var resampledFreqMags = new Float32Array(halfOutLength);
 
-  resampleArray(freqMags, resampledFreqMags);
+  resample.resampleArray(freqMags, resampledFreqMags);
 
   // Create new complex array for resampled freq data
   var resampledFreqComplex = new ComplexArray(outLength);
